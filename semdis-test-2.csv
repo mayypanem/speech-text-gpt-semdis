@@ -1,0 +1,16 @@
+id,item,response,condition
+1,idea for combating elderly loneliness,"virtual companion AI app for chats, reminders and hobbies",creative
+2,idea for combating elderly loneliness,intergenerational activity program with elderly-youth skill-sharing and mentoring,creative
+3,idea for combating elderly loneliness,"""Adopt a Neighbor"" initiative where volunteers are paired with elderly for companionship",creative
+4,idea for combating elderly loneliness,"interactive VR experiences for explorations, events and socializing",creative
+5,idea for combating elderly loneliness,mobile friendship bus as traveling hub with activities and wellness,creative
+102,"virtual companion AI app for chats, reminders and hobbies",intergenerational activity program with elderly-youth skill-sharing and mentoring,creative
+103,"virtual companion AI app for chats, reminders and hobbies","""Adopt a Neighbor"" initiative where volunteers are paired with elderly for companionship",creative
+104,"virtual companion AI app for chats, reminders and hobbies","interactive VR experiences for explorations, events and socializing",creative
+105,"virtual companion AI app for chats, reminders and hobbies",mobile friendship bus as traveling hub with activities and wellness,creative
+203,intergenerational activity program with elderly-youth skill-sharing and mentoring,"""Adopt a Neighbor"" initiative where volunteers are paired with elderly for companionship",creative
+204,intergenerational activity program with elderly-youth skill-sharing and mentoring,"interactive VR experiences for explorations, events and socializing",creative
+205,intergenerational activity program with elderly-youth skill-sharing and mentoring,mobile friendship bus as traveling hub with activities and wellness,creative
+304,"""Adopt a Neighbor"" initiative where volunteers are paired with elderly for companionship","interactive VR experiences for explorations, events and socializing",creative
+305,"""Adopt a Neighbor"" initiative where volunteers are paired with elderly for companionship",mobile friendship bus as traveling hub with activities and wellness,creative
+405,"interactive VR experiences for explorations, events and socializing",mobile friendship bus as traveling hub with activities and wellness,creative
