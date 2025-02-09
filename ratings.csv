@@ -1,0 +1,5 @@
+item,response,prediction,modelname
+brick,scratch it on a wall to make a drawing,0.42681339383125305,multilingual_semdis
+brick,kill an animal,0.2683553695678711,multilingual_semdis
+brick,add it to a yogurt as an ingredient,0.5398094654083252,multilingual_semdis
+brick,throw it at a child,0.3770653009414673,multilingual_semdis

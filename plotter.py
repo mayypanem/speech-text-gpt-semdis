@@ -23,7 +23,7 @@ def live_plotter(x_vec, y_data, ratings_line, title="AUT for brick", t_pause=0.1
         # Dynamic plotting
         plt.ion()
         # Size 14x7 inches
-        fig = plt.figure(figsize=(14,7))
+        fig = plt.figure(figsize=(13,6))
         # No subplots
         ax = fig.add_subplot(111)
         # Create variable to reference later

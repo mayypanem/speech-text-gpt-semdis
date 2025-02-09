@@ -1,4 +1,2 @@
 item,response,prediction,modelname
-brick,hit someone with a brick,0.3304184675216675,multilingual_semdis
-brick,build a wall,0.14981526136398315,multilingual_semdis
-brick,use the projector,0.29705002903938293,multilingual_semdis
+brick,throw a brick at a child,0.31920233368873596,multilingual_semdis

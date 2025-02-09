@@ -16,39 +16,39 @@ import matplotlib.pyplot as plt
 import numpy as np
 import csv
 import time
-import google.api_core.exceptions  # ✅ Add this to fix NameError
+import google.api_core.exceptions
+from plotter import live_plotter
 
+
+
+### Filenames
+OPENAI_API_KEY_FILE = "OpenAI-API-key.txt"
+GOOGLE_CLOUD_SPEECH_CREDENTIAL_FILE = "spech-text-gpt-semdis-f8647f2e5b71.json"
+IDEA_PAIRS_FILENAME = "idea_pairs.csv"
+RATINGS_FILENAME = "ratings.csv"
+
+### Variables
+# Flag to stop the program when ESC is pressed
+terminate_program = False
+item = "brick"
+
+### Google Cloud Speech
 # Audio recording parameters
 RATE = 16000
 CHUNK = int(RATE / 10)  # 100ms
-CSV_FILENAME = "ideas_pairs.csv"
+# Load credentials
+credentials = service_account.Credentials.from_service_account_file(GOOGLE_CLOUD_SPEECH_CREDENTIAL_FILE)
 
-
-
-# Global variable for visualization process
-visualization_process = None
-CSV_RESULTS_FILENAME = "processed_results.csv"
-# ✅ Create figure and axes once, not inside the update function
-plt.ion()  # Interactive mode keeps the figure open
-fig, ax = None, None
-
-# Flag to stop the program when ESC is pressed
-terminate_program = False
-
-# Load OpenAI API key
-key_file = "OpenAI-API-key.txt"
-if not os.path.exists(key_file):
-    raise FileNotFoundError(f"The file '{key_file}' was not found. Please create it and add your OpenAI API key.")
-with open(key_file, "r") as file:
+### OpenAI API
+# Load API key
+if not os.path.exists(OPENAI_API_KEY_FILE):
+    raise FileNotFoundError(f"The file '{OPENAI_API_KEY_FILE}' was not found. Please create it and add your OpenAI API key.")
+with open(OPENAI_API_KEY_FILE, "r") as file:
     openai_api_key = file.read().strip()
-
 # Configure OpenAI API
 client = OpenAI(api_key=openai_api_key)
 
-# Load Google Cloud Speech credentials
-credentials = service_account.Credentials.from_service_account_file(
-    r"C:\Users\majas\Documents\GitHub\speech-text-gpt-semdis\spech-text-gpt-semdis-f8647f2e5b71.json"
-)
+
 
 class MicrophoneStream:
     """Opens a recording stream as a generator yielding the audio chunks."""
@@ -65,7 +65,7 @@ class MicrophoneStream:
             channels=1,
             rate=self._rate,
             input=True,
-            input_device_index=3,  # Change index for different microphone
+            input_device_index=3,  # Change this index for different microphone
             frames_per_buffer=self._chunk,
             stream_callback=self._fill_buffer,
         )
@@ -97,125 +97,80 @@ def is_similar(new_idea, existing_ideas, similarity_threshold=0.8):
     close_matches = get_close_matches(new_idea, existing_ideas, n=1, cutoff=similarity_threshold)
     return len(close_matches) > 0
 
-def start_visualization():
-    """Starts the visualization in the main thread without freezing."""
-    global fig, ax  # ✅ Use the same figure globally
-
-    if fig is None or ax is None:  # ✅ Create only if it doesn’t exist
-        print("📊 Starting visualization...")
-        plt.ion()  # ✅ Enable interactive mode
-        fig, ax = plt.subplots(figsize=(5, 8))  # ✅ Adjust window size for vertical layout
-        plt.show(block=False)  # ✅ Prevents Matplotlib from freezing
-
-    update_visualization()  # ✅ First-time update so it's not empty
-    plt.pause(0.01)  # ✅ Small pause to ensure Matplotlib processes GUI events
-
 def read_csv():
-    """Reads CSV and extracts responses and predictions."""
+    """Reads CSV and extracts ideas and ratings."""
     try:
-        with open(CSV_RESULTS_FILENAME, "r", encoding="utf-8") as file:
+        with open(RATINGS_FILENAME, "r", encoding="utf-8") as file:
             reader = csv.reader(file)
-            next(reader)  # Skip header
-            
-            responses, predictions = [], []
-            for row in reader:
-                responses.append(row[1])  # Second column (response)
-                predictions.append(float(row[2]))  # Third column (prediction)
+            # Skip header
+            next(reader)
 
-            return responses, predictions
+            ideas, ratings = [], []
+            for row in reader:
+                ideas.append(row[1])  # Second column (idea)
+                ratings.append(float(row[2]))  # Third column (rating)
+
+            return ideas, ratings
     except Exception as e:
-        print(f"❌ Error reading CSV: {e}")
+        print(f"Error reading CSV: {e}")
         return [], []
 
-def update_visualization():
-    """Updates the existing plot with a vertical orientation and prevents freezing."""
-    global fig, ax
-
-    # ✅ Ensure figure and axis exist before updating
-    if fig is None or ax is None:
-        print("📊 Initializing visualization window...")
-        plt.ion()
-        fig, ax = plt.subplots(figsize=(5, 8))
-        plt.show(block=False)
-
-    try:
-        responses, predictions = read_csv()
-
-        if not responses or not predictions:
-            print("⚠️ No valid data to visualize.")
-            return
-
-        ax.clear()
-
-        # ✅ Flip the graph: Use predictions on Y-axis instead of X-axis
-        ax.scatter([0] * len(predictions), predictions, color="red", s=100, zorder=3)  
-
-        # ✅ Adjust label positioning dynamically
-        for y, label in zip(predictions, responses):
-            ax.text(
-                0.05, y,
-                label,
-                ha="left", va="center",
-                fontsize=10, fontweight="bold",
-                bbox=dict(facecolor='white', alpha=0.7, edgecolor='none', boxstyle="round,pad=0.3")
-            )
-
-        # ✅ Adjust axis limits for a vertical graph
-        ax.set_ylim(0, 1)
-        ax.set_xlim(-0.1, 0.3)
-        ax.set_yticks(np.linspace(0, 1, 11))
-        ax.set_xticks([])
-        ax.set_ylabel("Prediction Score")
-        ax.set_title("Real-Time Prediction Visualization (Vertical)", fontsize=12)
-
-        plt.draw()
-        fig.canvas.flush_events()  # ✅ Forces GUI to process events, prevents freezing
-        plt.pause(0.01)  # ✅ Small delay to keep UI responsive
-
-        print("✅ Visualization updated without freezing!")
-
-    except Exception as e:
-        print(f"❌ Error in update_visualization: {e}")
-
-
-
-def save_ideas_to_csv(ideas_list, filename=CSV_FILENAME):
-    """Saves unique ideas to a CSV file and updates visualization."""
+def save_ideas_to_csv(ideas_list, filename=IDEA_PAIRS_FILENAME):
+    """Saves unique ideas to a CSV file and runs a SemDis API call."""
+    
     if not ideas_list:
-        print("⚠️ No ideas to save!")
+        print("No ideas to save!")
         return
+    
+    # Remove potential duplicates before saving
+    unique_ideas = list(set(ideas_list))
 
-    unique_ideas = list(set(ideas_list))  # Remove duplicates before saving
-
+    #Save item-idea pairs to CSV
     with open(filename, mode="w", newline="", encoding="utf-8") as file:
         writer = csv.writer(file)
-        writer.writerow(["item", "response"])  # Write header
-
+        # Write header
+        writer.writerow(["item", "response"])
+        # Write item-idea pairs
         for idea in unique_ideas:
-            writer.writerow(["brick", idea])
+            writer.writerow([item, idea])
 
-    print(f"✅ Ideas saved to {filename}!")
+    print(f"Ideas saved to {filename}!")
 
     # Run semdisAPI-script.py
     try:
-        print("🔄 Running semdisAPI-script.py...")
+        print("\nRunning semdisAPI-script.py...")
         subprocess.run(["python", "semdisAPI-script.py"], check=True)
-        print("✅ semdisAPI-script.py executed successfully!")
-
-        # ✅ Ensure visualization updates immediately
-        print("🔄 Updating visualization...")
-        update_visualization()  # No plt.pause(1) here
-        print("✅ Visualization updated!")
-
+        print("\nsemdisAPI-script.py executed successfully!")
+        # update_visualization()
     except subprocess.CalledProcessError as e:
         print(f"❌ Error running script: {e}")
 
+def fill_list(ratings, target_length=40):
+    if len(ratings) < target_length:
+        # Prepend zeros if the list is too short
+        return [0] * (target_length - len(ratings)) + ratings
+    else:
+        # Keep only the last 40 elements if the list is too long
+        return ratings[-target_length:]
+    
+def update_visualization():
+    line = []
+    size = 30
+    x_vec = np.linspace(0,1,size+1)[0:-1]
+    while True:
+        ideas, ratings = read_csv()
+        line = live_plotter(x_vec,fill_list(ratings,size),line)
+        time.sleep(1)
+
 
 def send_to_chatgpt(ideas_list, transcripts_list):
-    latest_transcript = ' '.join(transcripts_list)  # Keep full transcript history
+    # Process full transcript
+    # TODO: explore transcript windows as an alternative and benchmark them
+    latest_transcript = ' '.join(transcripts_list)
+
     if not latest_transcript.strip():
-        print("⚠️ Empty transcript - Not sending to ChatGPT.")
-        return None
+        print("Empty transcript!")
+        return
 
     prompt = (
         "Extract alternative uses for a brick from the following text:\n"
@@ -236,7 +191,6 @@ def send_to_chatgpt(ideas_list, transcripts_list):
     )
 
     try:
-        print("Sending to ChatGPT...")
         response = client.chat.completions.create(
             model="gpt-4o-mini",
             messages=[{"role": "system", "content": "You are an assistant that strictly extracts new ideas from transcripts. "
@@ -247,56 +201,58 @@ def send_to_chatgpt(ideas_list, transcripts_list):
         )
 
         answer = response.choices[0].message.content.strip()
-        print(f"ChatGPT Response: {answer}")
+        print(f"API Response: {answer}")
 
-        # Extract ideas using regex
-        match = re.search(r"New Ideas:\s*(.*)", answer, re.IGNORECASE)
-        new_ideas = match.group(1).strip() if match else ""
-
-        if new_ideas.lower() == "none":
+        # Extract ideas into list
+        answer_ideas_string = re.search(r"New Ideas:\s*(.*)", answer, re.IGNORECASE)
+        answer_ideas = answer_ideas_string.group(1).strip() if answer_ideas_string else ""
+        if answer_ideas.lower() == "none":
             return []
-
-        # Split and filter new ideas
-        extracted_ideas = [idea.strip() for idea in new_ideas.split(",")]
+        extracted_ideas = [idea.strip() for idea in answer_ideas.split(",")]
 
         # **Stronger Filtering:** Remove ideas that are exact OR similar duplicates
         new_ideas_filtered = [idea for idea in extracted_ideas if not is_similar(idea, ideas_list)]
 
+        # No new ideas
         if not new_ideas_filtered:
-            print("⚠️ No truly new ideas detected after filtering.")
-            return []
-
+            print("No truly new ideas detected after filtering.")
+            return
+        
+        # Process new ideas
+        print(f"New ideas: {new_ideas_filtered}")
         ideas_list.extend(new_ideas_filtered)
+        print(f"Ideas List: {ideas_list}")
         save_ideas_to_csv(ideas_list)
-
-        return new_ideas_filtered
+        return
+    
     except Exception as e:
         print(f"OpenAI API error: {e}")
-        return []
+        return
 
-def listen_print_loop(responses, ideas_list):
+def listen_print_loop(responses, ideas_list, transcripts_list):
     """Listens for speech and processes it in real time."""
-    transcripts_list = []  # Stores full history
 
-    for response in responses:
+    #Google Cloud Speech
+    for response in responses:        
         if not response.results:
             continue
-
         result = response.results[0]
         if not result.alternatives:
             continue
-
         transcript = result.alternatives[0].transcript.strip()
 
         if result.is_final:
+            # Ignore empty transcript
             if not transcript:
-                continue  # Ignore empty speech
+                continue
+            # Process transcript content
+            print(f"Transcript: {transcript}")
+            # Add to list of transcripts
+            transcripts_list.append(transcript)
 
-            print(f"Final Transcript: {transcript}")
-            transcripts_list.append(transcript)  # No limit on history
-
-            result = send_to_chatgpt(ideas_list, transcripts_list)
-            print(f"Ideas List: {ideas_list}")
+            # Run OpenAI API request in separate thread
+            processing_thread = threading.Thread(target=send_to_chatgpt, args=(ideas_list, transcripts_list), daemon=True)
+            processing_thread.start()
 
 def escape_key_listener(microphone_stream):
     """Waits for the ESC key press to terminate the program."""
@@ -312,13 +268,23 @@ def escape_key_listener(microphone_stream):
     microphone_stream._audio_interface.terminate()
 
 def main():
+    # Reset files
+    if os.path.exists(IDEA_PAIRS_FILENAME):
+        os.remove(IDEA_PAIRS_FILENAME)
+        print(f"{IDEA_PAIRS_FILENAME} deleted successfully.")
+    if os.path.exists(RATINGS_FILENAME):
+        os.remove(RATINGS_FILENAME)
+        print(f"{RATINGS_FILENAME} deleted successfully.")
+
     global terminate_program
     client = SpeechClient(credentials=credentials)
     ideas_list = []
+    transcripts_list = []
+    
+    visualization_thread = threading.Thread(target=update_visualization, daemon=True)
+    visualization_thread.start()
 
-    start_visualization()  # ✅ Start visualization in the main thread
-
-    while not terminate_program:  # ✅ Keep running until ESC is pressed
+    while not terminate_program:
         try:
             with MicrophoneStream(RATE, CHUNK) as stream:
                 print("🎤 Starting new speech-to-text session (max duration: 5 minutes)...")
@@ -333,24 +299,19 @@ def main():
                     (StreamingRecognizeRequest(audio_content=content) for content in audio_generator)
                 )
 
-                listen_print_loop(responses, ideas_list)
-
-                # ✅ Keep Matplotlib fully responsive in the main thread
-                update_visualization()  
-                fig.canvas.flush_events()  # ✅ Forces UI updates
-                plt.pause(0.1)  # ✅ Allows smooth interactions
+                listen_print_loop(responses, ideas_list, transcripts_list)
 
         except google.api_core.exceptions.OutOfRange as e:
-            print(f"\n⚠️ Stream duration exceeded (5 min limit). Restarting...\nException: {e}")
-            continue  # ✅ Restarts the loop safely
+            print(f"\nStream duration exceeded (5 min limit). Restarting...\nException: {e}")
+            continue  # Restarts the loop safely
 
-        except KeyboardInterrupt:
-            print("\n🚨 Escape key pressed. Stopping everything...\n")
+        except KeyboardInterrupt as e:
+            print(f"Keyboard Interrupt: {e}")
             terminate_program = True
-            break  # ✅ Exit loop safely
+            break  # Exit loop safely
 
         except Exception as e:
-            print(f"❌ Unexpected error: {e}")
+            print(f"Unexpected error: {e}")
             break
 
     print("👋 Exiting program. Goodbye!")
