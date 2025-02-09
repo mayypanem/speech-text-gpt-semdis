@@ -46,7 +46,6 @@ download_response = session.get(download_url)
 if download_response.status_code == 200:
     with open(processed_csv_filename, "wb") as result_file:
         result_file.write(download_response.content)
-    print(f"✅ Results downloaded successfully! Saved as '{processed_csv_filename}'.")
 
     # ✅ Print first three columns (without Pandas)
     try:

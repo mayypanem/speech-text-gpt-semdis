@@ -1,14 +1,4 @@
 item,response,prediction,modelname
-brick,throw it into a lake,0.3331475555896759,multilingual_semdis
-brick,use it to smash something,0.42905065417289734,multilingual_semdis
-brick,use it as a step to reach a higher place,0.5509913861751556,multilingual_semdis
-brick,make crayons out of bricks,0.37508440017700195,multilingual_semdis
-brick,build a table out of bricks,0.3716300129890442,multilingual_semdis
-brick,use it as a weight,0.3992863595485687,multilingual_semdis
-brick,use it as stone pillars for a tunnel.,0.45759281516075134,multilingual_semdis
-brick,build some kind of chair,0.3575935363769531,multilingual_semdis
-brick,make a flower bed,0.276449054479599,multilingual_semdis
-brick,use it to intimidate,0.4632349908351898,multilingual_semdis
-brick,scare away crows,0.28546178340911865,multilingual_semdis
-brick,build a statue with it,0.31614893674850464,multilingual_semdis
-brick,make a path out of bricks,0.31300264596939087,multilingual_semdis
+brick,hit someone with a brick,0.3304184675216675,multilingual_semdis
+brick,build a wall,0.14981526136398315,multilingual_semdis
+brick,use the projector,0.29705002903938293,multilingual_semdis
