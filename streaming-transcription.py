@@ -191,7 +191,7 @@ def send_to_chatgpt(ideas_list, transcripts_list):
         "Instructions:\n"
         "1. Extract only the alternative uses explicitly mentioned in the text. Do NOT, under any circumstances, add any ideas of your own.\n"
         "2. The extracted ideas must be **realistic and physically feasible**.\n"
-        "   - **Reject ideas that do not involve an actual function of a brick.**\n"
+        f"   - **Reject ideas that do not involve an actual function of a {item}.**\n"
         "   - **Reject phrases that are just expressions, insults, or abstract concepts (e.g., 'be a dick').**\n"
         "   - Example: 'use as a nail' ❌ (bricks do not function as nails).\n"
         "   - Example: 'turn into a trampoline' ❌ (bricks do not bounce).\n"

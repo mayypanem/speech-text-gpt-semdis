@@ -69,20 +69,29 @@ def live_plotter(x_vec, y_data, ratings_line, ideas_list, ratings_list, idea_ann
 
     # Display ideas as text in the figure
 
-    text_str = r"$\bf{EXTRACTED}$" + " " + r"$\bf{IDEAS}$" + "\n\n"
+    text_str = r"$\bf{EXTRACTED}$" + " " + r"$\bf{IDEAS}$" + "                    \n\n"
     for i in range(len(ideas_list)):
-        formatted_rating = f"{ratings_list[i]:.2f}" if i < len(ratings_list) else ""
-        text_str += ideas_list[i] + " " + rf"$\bf{{{formatted_rating}}}$" + "\n"
+        idea = ideas_list[i]
+        list_entry = ""
+        if i < len(ratings_list):
+            formatted_rating = f"{ratings_list[i]:.2f}"
+            list_entry += idea + " " + rf"$\bf{{{formatted_rating}}}$" + "\n"
+        else:
+            # text_str += "$\mathit{" + idea.replace(" ", r"\ ") + "}$" + " ...\n"
+            list_entry += idea + " " + r"$\mathit{(loading...)}$" + "\n"
+        wrapped_list_entry = "\n".join(textwrap.wrap(list_entry, width=40)) + "\n"
+        text_str += wrapped_list_entry
+
 
     plt.subplots_adjust(right=0.75)
 
     ratings_line.axes.text(
-        1.05, 1.0, text_str,  # Move text slightly further right
+        1.05, 1.0, text_str,
         transform=ratings_line.axes.transAxes,
         fontsize=10, 
         horizontalalignment='left',  # Align left so text grows downward
         verticalalignment='top',  # Start at the top
-        bbox=dict(boxstyle="round,pad=0.5", edgecolor='black', facecolor='white')  # Increase padding
+        bbox=dict(boxstyle="round,pad=0.5", edgecolor='black', facecolor='white')
     )
 
     # Adjust boundaries if a rating is outside the range 
