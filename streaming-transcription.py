@@ -28,9 +28,10 @@ IDEA_PAIRS_FILENAME = "idea_pairs.csv"
 RATINGS_FILENAME = "ratings.csv"
 
 ### Variables
-# Flag to stop the program when ESC is pressed
+# Flag to stop the program
 terminate_program = False
 item = "brick"
+visualization_size = 7
 
 ### Google Cloud Speech
 # Audio recording parameters
@@ -123,7 +124,7 @@ def save_ideas_to_csv(ideas_list, filename=IDEA_PAIRS_FILENAME):
         return
     
     # Remove potential duplicates before saving
-    unique_ideas = list(set(ideas_list))
+    unique_ideas = list(dict.fromkeys(ideas_list))
 
     #Save item-idea pairs to CSV
     with open(filename, mode="w", newline="", encoding="utf-8") as file:
@@ -145,22 +146,31 @@ def save_ideas_to_csv(ideas_list, filename=IDEA_PAIRS_FILENAME):
     except subprocess.CalledProcessError as e:
         print(f"❌ Error running script: {e}")
 
-def fill_list(ratings, target_length=40):
+def fill_list(ratings, target_length=20):
     if len(ratings) < target_length:
         # Prepend zeros if the list is too short
-        return [0] * (target_length - len(ratings)) + ratings
+        return ratings + [0] * (target_length - len(ratings))
     else:
-        # Keep only the last 40 elements if the list is too long
+        # Keep only the last 20 elements if the list is too long
         return ratings[-target_length:]
     
-def update_visualization():
+def update_visualization(ideas_list):
     line = []
-    size = 30
+    size = visualization_size
     x_vec = np.linspace(0,1,size+1)[0:-1]
     while True:
-        ideas, ratings = read_csv()
-        line = live_plotter(x_vec,fill_list(ratings,size),line)
-        time.sleep(1)
+        try:
+            ideas, ratings = read_csv()
+
+            # Ensure lists match in size
+            ratings_filled = fill_list(ratings, size)
+            ideas_filled = fill_list(ideas, size)
+            
+            # Call live_plotter with proper arguments
+            line = live_plotter(x_vec, ratings_filled, line, ideas_list, idea_annotations=ideas_filled, title=f'AUT for {item}')
+        except Exception as e:
+            print(f"Unexpected error: {e}")
+        time.sleep(0.5)
 
 
 def send_to_chatgpt(ideas_list, transcripts_list):
@@ -173,7 +183,7 @@ def send_to_chatgpt(ideas_list, transcripts_list):
         return
 
     prompt = (
-        "Extract alternative uses for a brick from the following text:\n"
+        f"Extract alternative uses for a {item} from the following text:\n"
         f"{latest_transcript}\n\n"
         "Instructions:\n"
         "1. Extract only the alternative uses explicitly mentioned in the text. Do NOT, under any circumstances, add any ideas of your own.\n"
@@ -272,16 +282,17 @@ def main():
     if os.path.exists(IDEA_PAIRS_FILENAME):
         os.remove(IDEA_PAIRS_FILENAME)
         print(f"{IDEA_PAIRS_FILENAME} deleted successfully.")
-    if os.path.exists(RATINGS_FILENAME):
-        os.remove(RATINGS_FILENAME)
-        print(f"{RATINGS_FILENAME} deleted successfully.")
+    with open(RATINGS_FILENAME, mode="w", newline="", encoding="utf-8") as file:
+        writer = csv.writer(file)
+        # Write header
+        writer.writerow(["item", "response"])
 
     global terminate_program
     client = SpeechClient(credentials=credentials)
     ideas_list = []
     transcripts_list = []
-    
-    visualization_thread = threading.Thread(target=update_visualization, daemon=True)
+
+    visualization_thread = threading.Thread(target=update_visualization, args=(ideas_list,), daemon=True)
     visualization_thread.start()
 
     while not terminate_program:
