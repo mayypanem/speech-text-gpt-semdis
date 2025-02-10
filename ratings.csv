@@ -1,4 +1,1 @@
-item,response,prediction,modelname
-brick,scare away crows,0.28546178340911865,multilingual_semdis
-brick,use it as a step,0.40409189462661743,multilingual_semdis
-brick,throw it,0.14487621188163757,multilingual_semdis
+item,response

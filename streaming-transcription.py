@@ -1,3 +1,6 @@
+import warnings
+warnings.simplefilter("ignore", UserWarning)
+
 from google.cloud.speech import RecognitionConfig, StreamingRecognitionConfig, StreamingRecognizeRequest, SpeechClient
 import pyaudio
 from six.moves import queue
@@ -167,7 +170,7 @@ def update_visualization(ideas_list):
             ideas_filled = fill_list(ideas, size)
             
             # Call live_plotter with proper arguments
-            line = live_plotter(x_vec, ratings_filled, line, ideas_list, idea_annotations=ideas_filled, title=f'AUT for {item}')
+            line = live_plotter(x_vec, ratings_filled, line, ideas_list, ratings, idea_annotations=ideas_filled, title=f'AUT for {item}')
         except Exception as e:
             print(f"Unexpected error: {e}")
         time.sleep(0.5)

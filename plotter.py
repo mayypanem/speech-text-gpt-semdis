@@ -1,3 +1,6 @@
+import warnings
+warnings.filterwarnings("ignore", category=UserWarning, module="matplotlib")
+
 import matplotlib.pyplot as plt
 import numpy as np
 import textwrap
@@ -6,7 +9,7 @@ import textwrap
 plt.style.use('ggplot')
 
 
-def live_plotter(x_vec, y_data, ratings_line, ideas_list, idea_annotations=None, title="AUT for brick", t_pause=0.5):
+def live_plotter(x_vec, y_data, ratings_line, ideas_list, ratings_list, idea_annotations=None, title="AUT for brick", t_pause=0.5):
     """
     Updates a live plot with new creativity ratings.
 
@@ -65,8 +68,13 @@ def live_plotter(x_vec, y_data, ratings_line, ideas_list, idea_annotations=None,
             )
 
     # Display ideas as text in the figure
-    text_str = "EXTRACTED IDEAS\n\n" + "\n".join(ideas_list)
-    plt.subplots_adjust(right=0.75)  # Increase right margin (default is ~0.9)
+
+    text_str = r"$\bf{EXTRACTED}$" + " " + r"$\bf{IDEAS}$" + "\n\n"
+    for i in range(len(ideas_list)):
+        formatted_rating = f"{ratings_list[i]:.2f}" if i < len(ratings_list) else ""
+        text_str += ideas_list[i] + " " + rf"$\bf{{{formatted_rating}}}$" + "\n"
+
+    plt.subplots_adjust(right=0.75)
 
     ratings_line.axes.text(
         1.05, 1.0, text_str,  # Move text slightly further right
