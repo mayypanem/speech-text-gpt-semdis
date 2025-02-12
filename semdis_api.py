@@ -53,7 +53,6 @@ if download_response.status_code == 200:
             reader = csv.reader(file)
             # Read header row
             header = next(reader)
-            print("\nSemDis API: Processed Results")
             # Print header with spacing
             print(f"{header[0]:<10} {header[1]:<30} {header[2]:<15}")
             print("-" * 60)

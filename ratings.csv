@@ -1,5 +1,1 @@
-item,response,prediction,modelname
-brick,throw it,0.14487621188163757,multilingual_semdis
-brick,use it to reach a high place,0.5462511479854584,multilingual_semdis
-brick,smack a salami repeatedly until its mulch,0.4350147545337677,multilingual_semdis
-brick,use it as a weapon,0.3758208453655243,multilingual_semdis
+item,response

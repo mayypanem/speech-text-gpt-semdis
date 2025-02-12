@@ -97,7 +97,7 @@ def live_plotter(x_vec, y_data, ratings_line, ideas_list, ratings_list, idea_ann
     # Adjust boundaries if a rating is outside the range 
     if np.max(y_data)>=ratings_line.axes.get_ylim()[1]:
         # Spacing to highest/lowest value: one standard deviation
-        plt.ylim([0, np.max(y_data)+np.std(y_data)])
+        plt.ylim([0, np.max(y_data)+2*np.std(y_data)])
     # Update plot every t_pause seconds
     plt.pause(t_pause)
 

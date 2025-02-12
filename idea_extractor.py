@@ -21,20 +21,24 @@ import csv
 import time
 import google.api_core.exceptions
 from plotter import live_plotter
+import shutil
+from datetime import datetime
 
-
+### Task
+TASK_ITEM = "brick"
+TASK_DESCRIPTION = f"Come up with as many alternative uses as possible for a {TASK_ITEM}. Your goal is to be as creative as possible."
 
 ### Filenames
 OPENAI_API_KEY_FILE = "OpenAI-API-key.txt"
 GOOGLE_CLOUD_SPEECH_CREDENTIAL_FILE = "spech-text-gpt-semdis-f8647f2e5b71.json"
 IDEA_PAIRS_FILENAME = "idea_pairs.csv"
 RATINGS_FILENAME = "ratings.csv"
+TRANSCRIPTS_FILENAME = "transcripts.csv"
 
 ### Variables
 # Flag to stop the program
 terminate_program = False
-item = "brick"
-visualization_size = 7
+visualization_size = 20
 
 ### Google Cloud Speech
 # Audio recording parameters
@@ -116,7 +120,9 @@ def read_csv():
 
             return ideas, ratings
     except Exception as e:
-        print(f"Error reading CSV: {e}")
+        global terminate_program
+        if not terminate_program:
+            print(f"Error reading CSV: {e}")
         return [], []
 
 def save_ideas_to_csv(ideas_list, filename=IDEA_PAIRS_FILENAME):
@@ -136,15 +142,15 @@ def save_ideas_to_csv(ideas_list, filename=IDEA_PAIRS_FILENAME):
         writer.writerow(["item", "response"])
         # Write item-idea pairs
         for idea in unique_ideas:
-            writer.writerow([item, idea])
+            writer.writerow([TASK_ITEM, idea])
 
     print(f"Ideas saved to {filename}!")
 
-    # Run semdisAPI-script.py
+    # Run semdis_api.py
     try:
-        print("\nRunning semdisAPI-script.py...")
-        subprocess.run(["python", "semdisAPI-script.py"], check=True)
-        print("\nsemdisAPI-script.py executed successfully!")
+        print("\nRunning semdis_api.py...")
+        subprocess.run(["python", "semdis_api.py"], check=True)
+        print("\nsemdis_api.py executed successfully!\n")
         # update_visualization()
     except subprocess.CalledProcessError as e:
         print(f"❌ Error running script: {e}")
@@ -170,7 +176,7 @@ def update_visualization(ideas_list):
             ideas_filled = fill_list(ideas, size)
             
             # Call live_plotter with proper arguments
-            line = live_plotter(x_vec, ratings_filled, line, ideas_list, ratings, idea_annotations=ideas_filled, title=f'AUT for {item}')
+            line = live_plotter(x_vec, ratings_filled, line, ideas_list, ratings, idea_annotations=ideas_filled, title=TASK_DESCRIPTION)
         except Exception as e:
             print(f"Unexpected error: {e}")
         time.sleep(0.5)
@@ -186,15 +192,15 @@ def send_to_chatgpt(ideas_list, transcripts_list):
         return
 
     prompt = (
-        f"Extract alternative uses for a {item} from the following text:\n"
+        f"Extract alternative uses for a {TASK_ITEM} from the following text:\n"
         f"{latest_transcript}\n\n"
         "Instructions:\n"
         "1. Extract only the alternative uses explicitly mentioned in the text. Do NOT, under any circumstances, add any ideas of your own.\n"
         "2. The extracted ideas must be **realistic and physically feasible**.\n"
-        f"   - **Reject ideas that do not involve an actual function of a {item}.**\n"
+        f"   - **Reject ideas that do not involve an actual function of a {TASK_ITEM}.**\n" # function -> use, affordance, "something you can do with x"
         "   - **Reject phrases that are just expressions, insults, or abstract concepts (e.g., 'be a dick').**\n"
-        "   - Example: 'use as a nail' ❌ (bricks do not function as nails).\n"
-        "   - Example: 'turn into a trampoline' ❌ (bricks do not bounce).\n"
+        "   - Example: 'use as a nail' ❌ (bricks do not function as nails).\n" # mpre generic
+        "   - Example: 'turn into a trampoline' ❌ (bricks do not bounce).\n"# kkkkkkkk
         "3. Compare with previous ideas:\n"
         f"{', '.join(ideas_list)}\n"
         "   - Do NOT return similar ideas (e.g., 'build a house' ≈ 'build a building').\n"
@@ -214,7 +220,7 @@ def send_to_chatgpt(ideas_list, transcripts_list):
         )
 
         answer = response.choices[0].message.content.strip()
-        print(f"API Response: {answer}")
+        print(f"API Response: {answer}\n")
 
         # Extract ideas into list
         answer_ideas_string = re.search(r"New Ideas:\s*(.*)", answer, re.IGNORECASE)
@@ -246,7 +252,12 @@ def listen_print_loop(responses, ideas_list, transcripts_list):
     """Listens for speech and processes it in real time."""
 
     #Google Cloud Speech
-    for response in responses:        
+    for response in responses:
+        # Stop if ESC key was pressed
+        if terminate_program:
+            print("Terminating speech processing loop.\n")
+            return
+                
         if not response.results:
             continue
         result = response.results[0]
@@ -267,41 +278,115 @@ def listen_print_loop(responses, ideas_list, transcripts_list):
             processing_thread = threading.Thread(target=send_to_chatgpt, args=(ideas_list, transcripts_list), daemon=True)
             processing_thread.start()
 
-def escape_key_listener(microphone_stream):
+def archive_session_data(transcripts_list):
+    """Creates a timestamped folder, saves transcripts to a CSV, copies data files into it, moves it to 'data', and deletes the originals."""
+
+    # Create a timestamped folder
+    timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M")
+    folder_path = os.path.join(os.getcwd(), timestamp)
+    os.makedirs(folder_path, exist_ok=True)
+
+    # Create 'transcripts.csv' and save transcripts
+    try:
+        with open(TRANSCRIPTS_FILENAME, mode="w", newline="", encoding="utf-8") as file:
+            writer = csv.writer(file)
+            for transcript in transcripts_list:
+                writer.writerow([transcript])
+        print(f"✅ Created {TRANSCRIPTS_FILENAME} with {len(transcripts_list)} transcripts.")
+    except Exception as e:
+        print(f"❌ Error creating {TRANSCRIPTS_FILENAME}: {e}")
+
+    # List files to copy
+    files_to_copy = [RATINGS_FILENAME, IDEA_PAIRS_FILENAME, TRANSCRIPTS_FILENAME]
+
+    # Try copying files if they exist
+    successfully_copied = []
+    for file in files_to_copy:
+        try:
+            shutil.copy2(file, os.path.join(folder_path, file))
+            print(f"✅ Copied {file} to {folder_path}")
+            successfully_copied.append(file)  # Track successful copies
+        except FileNotFoundError:
+            print(f"⚠️ File {file} not found, skipping.")
+        except Exception as e:
+            print(f"❌ Error copying {file}: {e}")
+
+    # Move the timestamped folder into the "data" folder
+    data_folder = os.path.join(os.getcwd(), "data")
+    os.makedirs(data_folder, exist_ok=True)
+    try:
+        final_destination = os.path.join(data_folder, timestamp)
+        shutil.move(folder_path, final_destination)
+        print(f"✅ Moved folder {folder_path} to {final_destination}")
+    except Exception as e:
+        print(f"❌ Error moving folder to 'data': {e}")
+        # Prevent deletion if move fails
+        return
+
+    # Delete the original files after successful folder move
+    for file in successfully_copied:
+        try:
+            os.remove(file)
+            print(f"🗑️ Deleted original file: {file}")
+        except Exception as e:
+            print(f"❌ Error deleting {file}: {e}")
+
+def escape_key_listener(microphone_stream, transcripts_list):
     """Waits for the ESC key press to terminate the program."""
+
     global terminate_program
-    keyboard.wait("esc")  # Wait until ESC is pressed
-    print("\n🚨 Escape key pressed. Stopping everything...\n")
+    keyboard.wait("esc")  # Wait for ESC key press
+    print("\nESC pressed. Stopping everything...\n")
+
+    archive_session_data(transcripts_list)
     
-    # ✅ Stop the microphone stream safely
-    terminate_program = True  # Signal the main loop to stop
-    microphone_stream.closed = True
-    microphone_stream._audio_stream.stop_stream()
-    microphone_stream._audio_stream.close()
-    microphone_stream._audio_interface.terminate()
+    # Set flag to stop all loops
+    terminate_program = True
+
+    # Stop the microphone stream safely
+    try:
+        microphone_stream.closed = True
+        if microphone_stream._audio_stream.is_active():
+            microphone_stream._audio_stream.stop_stream()
+        microphone_stream._audio_stream.close()
+        microphone_stream._audio_interface.terminate()
+    except Exception as e:
+        print(f"Error closing microphone stream: {e}")
+
+    # Exit the program forcefully if necessary
+    sys.exit(0)
+
 
 def main():
+    print("\nStarting new idea extraction session...\n")
+
     # Reset files
     if os.path.exists(IDEA_PAIRS_FILENAME):
         os.remove(IDEA_PAIRS_FILENAME)
-        print(f"{IDEA_PAIRS_FILENAME} deleted successfully.")
     with open(RATINGS_FILENAME, mode="w", newline="", encoding="utf-8") as file:
         writer = csv.writer(file)
         # Write header
         writer.writerow(["item", "response"])
+    print("Files reset successfully.")
 
     global terminate_program
     client = SpeechClient(credentials=credentials)
     ideas_list = []
     transcripts_list = []
 
+    # Start visualization thread
     visualization_thread = threading.Thread(target=update_visualization, args=(ideas_list,), daemon=True)
     visualization_thread.start()
+    print("Visualization started.")
 
     while not terminate_program:
         try:
             with MicrophoneStream(RATE, CHUNK) as stream:
-                print("🎤 Starting new speech-to-text session (max duration: 5 minutes)...")
+                # Start escape key listener thread
+                escape_thread = threading.Thread(target=escape_key_listener, args=(stream, transcripts_list), daemon=True)
+                escape_thread.start()
+
+                print("\n🎤 Now listening...\n")
 
                 audio_generator = stream.generator()
                 responses = client.streaming_recognize(
