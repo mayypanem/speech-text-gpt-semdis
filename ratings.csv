@@ -1,1 +1,4 @@
-item,response
+item,response,prediction,modelname
+brick,throw it,0.14487621188163757,multilingual_semdis
+brick,use it as a paper weight,0.41698575019836426,multilingual_semdis
+brick,gift it to Maya for Valentine's Day,0.5081606805324554,multilingual_semdis

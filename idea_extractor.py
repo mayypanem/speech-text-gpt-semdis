@@ -10,8 +10,8 @@ import os
 import re
 import csv
 import itertools
-import keyboard  # Detect space key press
-import threading  # Run space key listener separately
+import keyboard
+import threading
 from difflib import get_close_matches
 import sys
 import subprocess
@@ -26,6 +26,7 @@ from datetime import datetime
 
 ### Task
 TASK_ITEM = "brick"
+TASK_TITLE = "Alternative uses for a " + TASK_ITEM
 TASK_DESCRIPTION = f"Come up with as many alternative uses as possible for a {TASK_ITEM}. Your goal is to be as creative as possible."
 
 ### Filenames
@@ -176,7 +177,7 @@ def update_visualization(ideas_list):
             ideas_filled = fill_list(ideas, size)
             
             # Call live_plotter with proper arguments
-            line = live_plotter(x_vec, ratings_filled, line, ideas_list, ratings, idea_annotations=ideas_filled, title=TASK_DESCRIPTION)
+            line = live_plotter(x_vec, ratings_filled, line, ideas_list, ratings, idea_annotations=ideas_filled, title=TASK_TITLE)
         except Exception as e:
             print(f"Unexpected error: {e}")
         time.sleep(0.5)
@@ -238,9 +239,9 @@ def send_to_chatgpt(ideas_list, transcripts_list):
             return
         
         # Process new ideas
-        print(f"New ideas: {new_ideas_filtered}")
+        print(f"💡 New ideas: {new_ideas_filtered}")
         ideas_list.extend(new_ideas_filtered)
-        print(f"Ideas List: {ideas_list}")
+        print(f"📄 Ideas List: {ideas_list}")
         save_ideas_to_csv(ideas_list)
         return
     
@@ -255,7 +256,7 @@ def listen_print_loop(responses, ideas_list, transcripts_list):
     for response in responses:
         # Stop if ESC key was pressed
         if terminate_program:
-            print("Terminating speech processing loop.\n")
+            print("\nTerminating speech processing loop.\n")
             return
                 
         if not response.results:

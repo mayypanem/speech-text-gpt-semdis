@@ -62,7 +62,7 @@ if download_response.status_code == 200:
                 print(f"{row[0]:<10} {row[1]:<30} {row[2]:<15}")  
 
     except Exception as e:
-        print(f"Error reading CSV: {e}")
+        print(f"SemDis API: Error reading CSV: {e}")
 else:
     print(f"SemDis API: Error downloading results: {download_response.status_code}")
     print(download_response.text)
