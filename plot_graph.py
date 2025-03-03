@@ -4,7 +4,7 @@ import textwrap
 import csv
 import time
 
-RATINGS_FILENAME = "data/Marco/ratings.csv"
+RATINGS_FILENAME = "data/2025-02-26_15-33_T1112_paperclip/ratings.csv"
 ANNOTATION_OFFSET_UP = 10
 ANNOTATION_OFFSET_DOWN = -25
 initial_xmin = 0
@@ -123,7 +123,6 @@ def live_plotter(y_data, ratings_line, ideas_list, idea_annotations=None, title=
     """
     annotation_offsets = position_annotations(y_data)
     # Indices where annotations should be fixed
-    fixed_indices = {i for i, val in enumerate(annotation_offsets) if val != 0}
     x_vec = x_vec = list(range(1, len(y_data)+1)) if y_data else []
 
     if ratings_line==[]:
@@ -135,7 +134,7 @@ def live_plotter(y_data, ratings_line, ideas_list, idea_annotations=None, title=
         ax = fig.add_subplot(111)
         # Set initial xlim and ylim range
         plt.xlim([initial_xmin,initial_xmax])
-        plt.ylim([0, 0.2])
+        plt.ylim([0.3, 0.5])
         # Create variable to reference later
         ratings_line, = ax.plot(x_vec,y_data,'-o')
         plt.ylabel('Creativity Rating')

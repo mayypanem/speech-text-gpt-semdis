@@ -23,9 +23,13 @@ import google.api_core.exceptions
 from plotter import live_plotter
 import shutil
 from datetime import datetime
+import pandas as pd
+
+INPUT_DEVICE_INDEX = 1 # 1: emeet, 3: normal microphone
+PARTICIPANT_NUMBERS = "C2930"
+TASK_ITEM = "shoe"
 
 ### Task
-TASK_ITEM = "brick"
 TASK_TITLE = "Alternative uses for a " + TASK_ITEM
 TASK_DESCRIPTION = f"Come up with as many alternative uses as possible for a {TASK_ITEM}. Your goal is to be as creative as possible."
 
@@ -39,7 +43,7 @@ TRANSCRIPTS_FILENAME = "transcripts.csv"
 ### Variables
 # Flag to stop the program
 terminate_program = False
-visualization_size = 20
+visualization_size = 10
 
 ### Google Cloud Speech
 # Audio recording parameters
@@ -74,7 +78,7 @@ class MicrophoneStream:
             channels=1,
             rate=self._rate,
             input=True,
-            input_device_index=3,  # Change this index for different microphone
+            input_device_index=INPUT_DEVICE_INDEX,  # Change this index for different microphone
             frames_per_buffer=self._chunk,
             stream_callback=self._fill_buffer,
         )
@@ -163,6 +167,7 @@ def fill_list(ratings, target_length=20):
     else:
         # Keep only the last 20 elements if the list is too long
         return ratings[-target_length:]
+        #return ratings
     
 def update_visualization(ideas_list):
     line = []
@@ -171,7 +176,6 @@ def update_visualization(ideas_list):
     while True:
         try:
             ideas, ratings = read_csv()
-
             # Ensure lists match in size
             ratings_filled = fill_list(ratings, size)
             ideas_filled = fill_list(ideas, size)
@@ -186,7 +190,7 @@ def update_visualization(ideas_list):
 def send_to_chatgpt(ideas_list, transcripts_list):
     # Process full transcript
     # TODO: explore transcript windows as an alternative and benchmark them
-    latest_transcript = ' '.join(transcripts_list)
+    latest_transcript = ' '.join(transcripts_list[-4:])
 
     if not latest_transcript.strip():
         print("Empty transcript!")
@@ -207,7 +211,7 @@ def send_to_chatgpt(ideas_list, transcripts_list):
         "   - Do NOT return similar ideas (e.g., 'build a house' ≈ 'build a building').\n"
         "4. If no valid new ideas exist, return: New Ideas: none\n"
         "5. Format response as:\n"
-        "New Ideas: idea1, idea2, idea3\n"
+        "New Ideas: idea1; idea2; idea3\n"
     )
 
     try:
@@ -228,7 +232,7 @@ def send_to_chatgpt(ideas_list, transcripts_list):
         answer_ideas = answer_ideas_string.group(1).strip() if answer_ideas_string else ""
         if answer_ideas.lower() == "none":
             return []
-        extracted_ideas = [idea.strip() for idea in answer_ideas.split(",")]
+        extracted_ideas = [idea.strip() for idea in answer_ideas.split(";")]
 
         # **Stronger Filtering:** Remove ideas that are exact OR similar duplicates
         new_ideas_filtered = [idea for idea in extracted_ideas if not is_similar(idea, ideas_list)]
@@ -283,7 +287,7 @@ def archive_session_data(transcripts_list):
     """Creates a timestamped folder, saves transcripts to a CSV, copies data files into it, moves it to 'data', and deletes the originals."""
 
     # Create a timestamped folder
-    timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M")
+    timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M") + "_" + PARTICIPANT_NUMBERS + "_" + TASK_ITEM
     folder_path = os.path.join(os.getcwd(), timestamp)
     os.makedirs(folder_path, exist_ok=True)
 
@@ -311,6 +315,26 @@ def archive_session_data(transcripts_list):
             print(f"⚠️ File {file} not found, skipping.")
         except Exception as e:
             print(f"❌ Error copying {file}: {e}")
+
+    # If 'idea_pairs.csv' was copied, create 'idea_comparison.csv'
+    idea_pairs_path = os.path.join(folder_path, "idea_pairs.csv")
+    idea_comparison_path = os.path.join(folder_path, "idea_comparison.csv")
+    if os.path.exists(idea_pairs_path):
+        try:
+            df = pd.read_csv(idea_pairs_path)
+            if df.shape[1] >= 2:  # Ensure at least two columns exist
+                new_df = pd.DataFrame()
+                new_df["manually extracted ideas"] = ""
+                new_df["automatically extracted ideas"] = df.iloc[:, 1]
+                new_df["codes"] = ""
+                
+                # Save as 'idea_comparison.csv'
+                new_df.to_csv(idea_comparison_path, index=False)
+                print(f"✅ Created {idea_comparison_path}")
+            else:
+                print(f"⚠️ Skipping 'idea_comparison.csv': Not enough columns in 'idea_pairs.csv'.")
+        except Exception as e:
+            print(f"❌ Error processing 'idea_pairs.csv': {e}")
 
     # Move the timestamped folder into the "data" folder
     data_folder = os.path.join(os.getcwd(), "data")
