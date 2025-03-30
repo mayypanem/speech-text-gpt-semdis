@@ -4,6 +4,16 @@ This Python-based tool enables **real-time extraction of creative ideas** from s
 
 ---
 
+## 📦 Features
+
+- 🎙️ **Speech-to-text** via Google Cloud Speech
+- 🧠 **LLM-powered idea extraction** (OpenAI GPT-4o-mini)
+- 📊 **Novelty scoring** via [SemDis](https://cap.ist.psu.edu/semdis)
+- 📈 **Live visualization** with annotated ideas
+- 🗃️ **Automatic session archiving**
+
+---
+
 ## ⚙️ Setup
 
 ### 1. Clone the Repository
@@ -54,16 +64,6 @@ This will:
 - Save transcripts and results
 
 Press `ESC` to end the session and archive the data automatically.
-
----
-
-## 📦 Features
-
-- 🎙️ **Speech-to-text** via Google Cloud Speech
-- 🧠 **LLM-powered idea extraction** (OpenAI GPT-4o-mini)
-- 📊 **Novelty scoring** via [SemDis](https://cap.ist.psu.edu/semdis)
-- 📈 **Live visualization** with annotated ideas
-- 🗃️ **Automatic session archiving**
 
 ---
 
