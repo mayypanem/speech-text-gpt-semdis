@@ -13,3 +13,6 @@ spech-text-gpt-semdis-f8647f2e5b71.json
 
 # Ignore user data
 data/
+
+# Ignore visualization testing file
+plot_graph.py

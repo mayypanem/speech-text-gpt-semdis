@@ -26,8 +26,8 @@ from datetime import datetime
 import pandas as pd
 
 INPUT_DEVICE_INDEX = 1 # 1: emeet, 3: normal microphone
-PARTICIPANT_NUMBERS = "C2930"
-TASK_ITEM = "shoe"
+PARTICIPANT_NUMBERS = "C3536"
+TASK_ITEM = "paperclip"
 
 ### Task
 TASK_TITLE = "Alternative uses for a " + TASK_ITEM
@@ -221,7 +221,7 @@ def send_to_chatgpt(ideas_list, transcripts_list):
                                                     "You do NOT generate ideas, only extract them from user speech."},
                       {"role": "user", "content": prompt}],
             max_tokens=200,
-            temperature=0.1
+            temperature=0.2
         )
 
         answer = response.choices[0].message.content.strip()
